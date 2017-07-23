@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>Hello World</title>
+
+	<script>
+
+		function getMessage(ev) {
+			//get a message from the server that the user might like to see
+			SrvReq("../Service/Messages.svc/GetMessage", { forClient: 'WEB' }, writeMessage);
+
+		}
+
+		function writeMessage(ev, cbObj) {
+			//display the message to the user in the desired HTML location
+			document.getElementById("msg").textContent = cbObj.text;
+		}
+
+		function SrvReq(url, payload, callBack) {
+
+			var httpReq = new XMLHttpRequest();
+			httpReq.open("POST", url, true);
+			httpReq.timeout = 5000;
+			//let the server know that the body content is in JSON format
+			httpReq.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+			//this is the handler while we wait for the server response, send the event to SrvResp() while we wait
+			httpReq.onreadystatechange = function (e) {
+				//myResponseObj is what will be sent to the callback function for handling the response
+				var myResponseObj = SrvResp(e);
+				if (myResponseObj && callBack)
+					callBack(e, myResponseObj);
+			};
+
+			//watch for any network or response errors or timeouts
+			httpReq.onerror = SrvError;
+			//embed the function arguments in the 'wrapped' body
+			httpReq.send(JSON.stringify(payload));
+
+		}
+
+		function SrvError(e) {
+			alert(e);
+		}
+
+		function SrvResp(e) {
+			//the XMLHttpRequest object
+			var httpReq = e.target;
+			//a ready state of 4 is complete
+			if (httpReq.readyState === 4) {
+
+				//a response code of 200 is valid, all others are a failure
+				if (httpReq.status === 200) {
+					return { text: JSON.parse(httpReq.responseText).GetMessageResult };
+				} else {
+					//alert out the error for debugging, remove for production
+					alert("Code: " + httpReq.status.toString() + " Text: " + httpReq.statusText + " \n" + httpReq.responseText);
+				}
+			}
+		}
+
+	</script>
+</head>
+<body>
+	<button onclick="getMessage(event)">Click Me!</button>
+	<h1 id="msg"></h1>
+</body>
+</html>
